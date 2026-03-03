@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>오타쿠 체스 ♟ 천사 vs 마계</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gugi&family=Gothic+A1:wght@400;700;900&family=Zen+Dots&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-main: #F5EEF8;
+      --bg-card: #FFFFFF;
+      --bg-card-alpha: rgba(255,255,255,0.85);
+      --text-primary: #1A1028;
+      --text-secondary: #6B5B7B;
+      --text-muted: #9E8FB0;
+      --board-light: #EDE0F5;
+      --board-dark: #9B72B0;
+      --board-border: #7B4F9A;
+      --selected-bg: rgba(255, 215, 0, 0.55);
+      --legal-dot: rgba(120, 60, 160, 0.35);
+      --last-move: rgba(180, 130, 255, 0.25);
+      --check-bg: rgba(255, 50, 50, 0.45);
+      --accent-gold: #C8A32E;
+      --accent-pink: #D94E8F;
+      --accent-purple: #7B4F9A;
+      --shadow-color: rgba(80, 40, 120, 0.12);
+      --white-team: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+      --black-team: linear-gradient(135deg, #311B60, #4A1A6B);
+      --white-team-text: #8B6914;
+      --black-team-text: #6B3FA0;
+      --modal-bg: rgba(10, 5, 20, 0.7);
+    }
+
+    .dark {
+      --bg-main: #0A0815;
+      --bg-card: #161225;
+      --bg-card-alpha: rgba(22,18,37,0.9);
+      --text-primary: #E8E0F5;
+      --text-secondary: #A898C0;
+      --text-muted: #6B5B80;
+      --board-light: #3A2850;
+      --board-dark: #1E1235;
+      --board-border: #5C3D7A;
+      --selected-bg: rgba(255, 215, 0, 0.35);
+      --legal-dot: rgba(200, 160, 255, 0.4);
+      --last-move: rgba(140, 80, 220, 0.2);
+      --check-bg: rgba(255, 40, 40, 0.35);
+      --accent-gold: #FFD54F;
+      --accent-pink: #FF69B4;
+      --accent-purple: #B388FF;
+      --shadow-color: rgba(0, 0, 0, 0.4);
+      --white-team: linear-gradient(135deg, #2A2040, #3A2855);
+      --black-team: linear-gradient(135deg, #150820, #220E38);
+      --white-team-text: #FFD54F;
+      --black-team-text: #CE93D8;
+      --modal-bg: rgba(5, 2, 12, 0.85);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: 'Gothic A1', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ===== TITLE SCREEN ===== */
+    #title-screen {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+      background: var(--bg-main);
+      position: relative; overflow: hidden;
+    }
+
+    .title-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(120, 50, 180, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255, 100, 150, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(100, 80, 200, 0.08) 0%, transparent 70%);
+    }
+
+    .dark .title-bg {
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(120, 50, 180, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255, 50, 120, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(60, 20, 140, 0.2) 0%, transparent 70%);
+    }
+
+    .stars {
+      position: absolute; inset: 0; overflow: hidden;
+    }
+    .star {
+      position: absolute; width: 3px; height: 3px;
+      background: var(--accent-gold); border-radius: 50%;
+      animation: twinkle 3s infinite ease-in-out;
+    }
+    .dark .star { background: #fff; }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .game-title {
+      font-family: 'Gugi', cursive;
+      font-size: clamp(2.4rem, 8vw, 4.2rem);
+      text-align: center;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink), var(--accent-gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleGlow 3s ease-in-out infinite alternate;
+      position: relative; z-index: 1;
+      line-height: 1.3;
+    }
+
+    @keyframes titleGlow {
+      0% { filter: drop-shadow(0 0 8px rgba(180, 100, 255, 0.3)); }
+      100% { filter: drop-shadow(0 0 20px rgba(255, 100, 180, 0.5)); }
+    }
+
+    .title-sub {
+      font-family: 'Gothic A1', sans-serif;
+      font-size: clamp(0.85rem, 3vw, 1.15rem);
+      color: var(--text-secondary);
+      margin-top: 8px; letter-spacing: 3px;
+      position: relative; z-index: 1;
+    }
+
+    .title-versus {
+      display: flex; align-items: center; gap: 18px;
+      margin: 32px 0;
+      position: relative; z-index: 1;
+    }
+
+    .faction-preview {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+
+    .faction-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 900;
+      border: 3px solid;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .faction-icon.angel {
+      background: linear-gradient(135deg, #FFF8E1, #FFE082);
+      border-color: #FFD54F;
+      color: #8B6914;
+    }
+    .faction-icon.demon {
+      background: linear-gradient(135deg, #4A148C, #7B1FA2);
+      border-color: #CE93D8;
+      color: #E1BEE7;
+      animation-delay: -2s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .vs-text {
+      font-family: 'Zen Dots', cursive;
+      font-size: clamp(1.4rem, 5vw, 2.2rem);
+      color: var(--accent-pink);
+      text-shadow: 0 0 12px rgba(255, 100, 180, 0.4);
+    }
+
+    .faction-label {
+      font-family: 'Gugi', cursive;
+      font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+      color: var(--text-secondary);
+    }
+
+    .title-buttons {
+      display: flex; flex-direction: column; gap: 14px;
+      position: relative; z-index: 1;
+      width: min(320px, 85vw);
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: 2px solid var(--accent-purple);
+      border-radius: 12px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: 'Gugi', cursive;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(180, 100, 255, 0.08), rgba(255, 100, 180, 0.08));
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .btn:hover, .btn:active {
+      border-color: var(--accent-pink);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--shadow-color);
+    }
+    .btn:hover::after, .btn:active::after { opacity: 1; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-purple), #9B59B6);
+      color: #fff;
+      border-color: transparent;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #8E44AD, #C0392B);
+      border-color: transparent;
+    }
+
+    .title-credit {
+      position: relative; z-index: 1;
+      margin-top: 28px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* ===== GAME SCREEN ===== */
+    #game-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px 8px;
+      background: var(--bg-main);
+      position: relative;
+    }
+
+    .game-header {
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(95vw, 580px);
+      padding: 6px 12px;
+      margin-bottom: 6px;
+    }
+
+    .game-title-small {
+      font-family: 'Gugi', cursive;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-btns { display: flex; gap: 8px; }
+
+    .btn-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1.5px solid var(--board-border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-icon:hover { background: var(--board-light); color: var(--text-primary); }
+
+    .player-bar {
+      display: flex; align-items: center; gap: 10px;
+      width: min(95vw, 580px);
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1.5px solid transparent;
+      transition: all 0.3s;
+      margin: 4px 0;
+      min-height: 48px;
+    }
+    .player-bar.active {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+    }
+    .dark .player-bar.active {
+      box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+    }
+
+    .player-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%; overflow: hidden;
+      border: 2px solid var(--board-border);
+      flex-shrink: 0;
+    }
+    .player-avatar svg { width: 100%; height: 100%; }
+
+    .player-info { flex: 1; min-width: 0; }
+
+    .player-name {
+      font-family: 'Gugi', cursive;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-faction {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .captured-row {
+      display: flex; flex-wrap: wrap; gap: 2px;
+      max-width: 160px;
+    }
+    .captured-piece {
+      width: 22px; height: 22px;
+      border-radius: 50%; overflow: hidden;
+      opacity: 0.7;
+    }
+    .captured-piece svg { width: 100%; height: 100%; }
+
+    .turn-badge {
+      font-size: 0.6rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--accent-gold);
+      color: #1A1028;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .turn-badge.hidden { visibility: hidden; }
+
+    /* ===== BOARD ===== */
+    .board-wrap {
+      position: relative;
+      margin: 4px 0;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      width: min(92vw, 520px);
+      height: min(92vw, 520px);
+      border: 3px solid var(--board-border);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px var(--shadow-color);
+    }
+
+    .square {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .square.light { background: var(--board-light); }
+    .square.dark-sq { background: var(--board-dark); }
+
+    .square.selected { background: var(--selected-bg) !important; }
+    .square.last-move { background: var(--last-move) !important; }
+    .square.check-sq { background: var(--check-bg) !important; animation: checkPulse 1s ease-in-out infinite; }
+
+    @keyframes checkPulse {
+      0%, 100% { box-shadow: inset 0 0 8px rgba(255,40,40,0.3); }
+      50% { box-shadow: inset 0 0 16px rgba(255,40,40,0.6); }
+    }
+
+    .square.legal-move::after {
+      content: ''; position: absolute;
+      width: 28%; height: 28%;
+      border-radius: 50%;
+      background: var(--legal-dot);
+      pointer-events: none;
+    }
+    .square.legal-capture::after {
+      content: ''; position: absolute;
+      width: 85%; height: 85%;
+      border-radius: 50%;
+      border: 4px solid var(--legal-dot);
+      background: transparent;
+      pointer-events: none;
+    }
+
+    .piece-wrap {
+      width: 82%; height: 82%;
+      border-radius: 50%;
+      overflow: hidden;
+      transition: transform 0.1s;
+      position: relative;
+      z-index: 2;
+    }
+    .piece-wrap:hover { transform: scale(1.08); }
+    .piece-wrap svg { width: 100%; height: 100%; display: block; }
+
+    .piece-wrap.capturing {
+      animation: captureShake 0.3s ease-out;
+    }
+    @keyframes captureShake {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.15) rotate(-5deg); }
+      50% { transform: scale(0.95) rotate(3deg); }
+      75% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .piece-wrap.placed {
+      animation: piecePlace 0.25s ease-out;
+    }
+    @keyframes piecePlace {
+      0% { transform: scale(0.5); opacity: 0.5; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    .coord-label {
+      position: absolute;
+      font-size: 0.55rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .coord-file { bottom: 1px; right: 3px; }
+    .coord-rank { top: 1px; left: 3px; }
+
+    /* ===== STATUS BAR ===== */
+    .status-bar {
+      width: min(95vw, 580px);
+      text-align: center;
+      padding: 6px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      min-height: 28px;
+    }
+    .status-bar .thinking {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .thinking-dots span {
+      display: inline-block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent-purple);
+      animation: dotBounce 1.2s ease-in-out infinite;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    .game-controls {
+      display: flex; gap: 8px;
+      margin-top: 8px;
+    }
+    .btn-sm {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--board-border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-family: 'Gothic A1', sans-serif;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-sm:hover { background: var(--board-light); color: var(--text-primary); }
+
+    /* ===== MODALS ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: var(--modal-bg);
+      z-index: 100;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 16px 48px var(--shadow-color);
+      animation: modalIn 0.3s ease-out;
+      border: 2px solid var(--board-border);
+    }
+    @keyframes modalIn {
+      0% { opacity: 0; transform: scale(0.85) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-title {
+      font-family: 'Gugi', cursive;
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .modal-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .promotion-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .promo-option {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      padding: 10px 4px;
+      border-radius: 10px;
+      border: 2px solid var(--board-border);
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .promo-option:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px var(--shadow-color);
+    }
+    .promo-option .promo-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%; overflow: hidden;
+    }
+    .promo-option .promo-avatar svg { width: 100%; height: 100%; }
+    .promo-option .promo-label {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+    }
+
+    .modal-buttons {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 16px;
+    }
+
+    /* ===== TOOLTIP ===== */
+    #char-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 90;
+      background: var(--bg-card);
+      border: 2px solid var(--board-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      max-width: 200px;
+      box-shadow: 0 8px 24px var(--shadow-color);
+      pointer-events: none;
+    }
+    #char-tooltip.visible { display: block; }
+
+    .tooltip-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px;
+    }
+    .tooltip-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%; overflow: hidden;
+    }
+    .tooltip-avatar svg { width: 100%; height: 100%; }
+    .tooltip-name {
+      font-family: 'Gugi', cursive;
+      font-size: 0.9rem;
+    }
+    .tooltip-rarity {
+      font-size: 0.6rem;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .tooltip-rarity.SSR { background: linear-gradient(135deg, #FFD700, #FF8C00); color: #fff; }
+    .tooltip-rarity.SR { background: linear-gradient(135deg, #9B59B6, #8E44AD); color: #fff; }
+    .tooltip-rarity.R { background: linear-gradient(135deg, #3498DB, #2980B9); color: #fff; }
+
+    .tooltip-desc {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 420px) {
+      .player-bar { padding: 6px 8px; gap: 6px; }
+      .player-name { font-size: 0.75rem; }
+      .captured-piece { width: 18px; height: 18px; }
+      .player-avatar { width: 30px; height: 30px; }
+      .game-header { padding: 4px 8px; }
+    }
+
+    @media (min-height: 800px) {
+      #game-screen { padding-top: 16px; }
+      .player-bar { padding: 10px 14px; margin: 6px 0; }
+    }
+
+    /* ===== MOVE LOG ===== */
+    .move-log {
+      width: min(95vw, 580px);
+      max-height: 90px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--board-border);
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 8px;
+    }
+    .move-entry { white-space: nowrap; }
+    .move-num { color: var(--text-muted); margin-right: 2px; }
+    .move-san { color: var(--text-primary); font-weight: 700; }
+    .move-san.capture { color: var(--accent-pink); }
+    .move-san.check { color: #E74C3C; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--board-border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== TITLE SCREEN ===== -->
+  <div id="title-screen">
+    <div class="title-bg"></div>
+    <div class="stars" id="stars-container"></div>
+
+    <div class="game-title">오타쿠 체스</div>
+    <div class="title-sub">♰ CELESTIA vs ABYSSAL ♱</div>
+
+    <div class="title-versus">
+      <div class="faction-preview">
+        <div class="faction-icon angel">♕</div>
+        <div class="faction-label">천사 학원</div>
+      </div>
+      <div class="vs-text">VS</div>
+      <div class="faction-preview">
+        <div class="faction-icon demon">♛</div>
+        <div class="faction-label">마계 학원</div>
+      </div>
+    </div>
+
+    <div class="title-buttons">
+      <button class="btn btn-primary" onclick="startGame('ai')">⚔️ AI 대전</button>
+      <button class="btn" onclick="startGame('pvp')">👥 로컬 대전</button>
+    </div>
+
+    <div class="title-credit">OTAKU CHESS MVP v1.0</div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="game-screen">
+    <div class="game-header">
+      <div class="game-title-small">오타쿠 체스</div>
+      <div class="header-btns">
+        <button class="btn-icon" onclick="undoMove()" title="되돌리기">↩</button>
+        <button class="btn-icon" onclick="goToTitle()" title="타이틀로">⌂</button>
+      </div>
+    </div>
+
+    <div class="player-bar" id="bar-black">
+      <div class="player-avatar" id="avatar-black"></div>
+      <div class="player-info">
+        <div class="player-name" id="name-black">마계 학원</div>
+        <div class="player-faction" id="faction-black">ABYSSAL ACADEMY</div>
+      </div>
+      <div class="captured-row" id="captured-black"></div>
+      <div class="turn-badge hidden" id="badge-black">턴</div>
+    </div>
+
+    <div class="board-wrap">
+      <div id="board"></div>
+    </div>
+
+    <div class="player-bar" id="bar-white">
+      <div class="player-avatar" id="avatar-white"></div>
+      <div class="player-info">
+        <div class="player-name" id="name-white">천사 학원</div>
+        <div class="player-faction" id="faction-white">CELESTIA ACADEMY</div>
+      </div>
+      <div class="captured-row" id="captured-white"></div>
+      <div class="turn-badge" id="badge-white">턴</div>
+    </div>
+
+    <div class="status-bar" id="status-bar"></div>
+
+    <div class="game-controls">
+      <button class="btn-sm" onclick="resetGame()">🔄 새 게임</button>
+      <button class="btn-sm" onclick="undoMove()">↩ 되돌리기</button>
+    </div>
+
+    <div class="move-log" id="move-log"></div>
+  </div>
+
+  <!-- ===== PROMOTION MODAL ===== -->
+  <div class="modal-overlay" id="promotion-modal">
+    <div class="modal-box">
+      <div class="modal-title">프로모션!</div>
+      <div class="modal-subtitle">승급할 캐릭터를 선택하세요</div>
+      <div class="promotion-grid" id="promotion-grid"></div>
+    </div>
+  </div>
+
+  <!-- ===== GAME OVER MODAL ===== -->
+  <div class="modal-overlay" id="gameover-modal">
+    <div class="modal-box">
+      <div class="modal-title" id="gameover-title">게임 종료</div>
+      <div class="modal-subtitle" id="gameover-msg"></div>
+      <div class="modal-buttons">
+        <button class="btn" onclick="goToTitle()">⌂ 타이틀</button>
+        <button class="btn btn-primary" onclick="resetGame()">🔄 다시</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOOLTIP ===== -->
+  <div id="char-tooltip">
+    <div class="tooltip-header">
+      <div class="tooltip-avatar" id="tip-avatar"></div>
+      <div>
+        <div class="tooltip-name" id="tip-name"></div>
+        <span class="tooltip-rarity" id="tip-rarity"></span>
+      </div>
+    </div>
+    <div class="tooltip-desc" id="tip-desc"></div>
+  </div>
+
+<script>
+/* ============================================================
+   DARK MODE
+============================================================ */
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.documentElement.classList.add('dark');
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  e.matches ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark');
+});
+
+/* ============================================================
+   CHARACTER DATA
+============================================================ */
+const CHARACTERS = {
+  wK: { name: '세라피나', role: 'King', roleKR: '왕', rarity: 'SSR', faction: '천사 학원',
+    desc: '천사 학원 생도회장. 자비로운 미소 뒤에 절대적 카리스마.',
+    hair: '#FFD54F', eye: '#42A5F5', skin: '#FDEBD0', body: '#FFFDE7', accent: '#FFC107' },
+  wQ: { name: '루미나', role: 'Queen', roleKR: '여왕', rarity: 'SSR', faction: '천사 학원',
+    desc: '빛의 마법소녀. 쌍드릴 트윈테일이 트레이드마크.',
+    hair: '#F48FB1', eye: '#EC407A', skin: '#FDEBD0', body: '#FCE4EC', accent: '#E91E63' },
+  wB: { name: '시스티나', role: 'Bishop', roleKR: '비숍', rarity: 'SR', faction: '천사 학원',
+    desc: '성당의 수녀. 고요한 미소 속에 숨겨진 신성한 힘.',
+    hair: '#90CAF9', eye: '#29B6F6', skin: '#FDEBD0', body: '#E3F2FD', accent: '#2196F3' },
+  wN: { name: '발키리', role: 'Knight', roleKR: '나이트', rarity: 'SR', faction: '천사 학원',
+    desc: '천사 기사단의 에이스. 높은 포니테일에 은빛 갑옷.',
+    hair: '#E0E0E0', eye: '#66BB6A', skin: '#FDEBD0', body: '#E8F5E9', accent: '#4CAF50' },
+  wR: { name: '아이기스', role: 'Rook', roleKR: '룩', rarity: 'SR', faction: '천사 학원',
+    desc: '방어형 메카 소녀. 라벤더 단발에 기어 이어링.',
+    hair: '#CE93D8', eye: '#AB47BC', skin: '#FDEBD0', body: '#F3E5F5', accent: '#9C27B0' },
+  wP: { name: '노비스', role: 'Pawn', roleKR: '폰', rarity: 'R', faction: '천사 학원',
+    desc: '천사 학원 1학년 연습생. 열정 가득한 눈빛!',
+    hair: '#FFCC80', eye: '#8D6E63', skin: '#FDEBD0', body: '#FFF3E0', accent: '#FF9800' },
+  bK: { name: '릴리스', role: 'King', roleKR: '왕', rarity: 'SSR', faction: '마계 학원',
+    desc: '마계 학원의 절대 마왕. 보랏빛 장발에 악마의 뿔.',
+    hair: '#9C27B0', eye: '#F44336', skin: '#D7CCC8', body: '#4A148C', accent: '#7B1FA2' },
+  bQ: { name: '모르가나', role: 'Queen', roleKR: '여왕', rarity: 'SSR', faction: '마계 학원',
+    desc: '흑마법의 여왕. 붉은 웨이브 헤어에 불꽃 왕관.',
+    hair: '#EF5350', eye: '#FF5722', skin: '#D7CCC8', body: '#B71C1C', accent: '#F44336' },
+  bB: { name: '벨라돈나', role: 'Bishop', roleKR: '비숍', rarity: 'SR', faction: '마계 학원',
+    desc: '다크 프리스트. 후드 아래 한쪽 눈만 빛나는 미스터리.',
+    hair: '#5C6BC0', eye: '#42A5F5', skin: '#D7CCC8', body: '#1A237E', accent: '#3F51B5' },
+  bN: { name: '나이트메어', role: 'Knight', roleKR: '나이트', rarity: 'SR', faction: '마계 학원',
+    desc: '암흑 기사. 은백색 스파이크 헤어에 붉은 눈.',
+    hair: '#CFD8DC', eye: '#EF5350', skin: '#D7CCC8', body: '#37474F', accent: '#607D8B' },
+  bR: { name: '포트레스', role: 'Rook', roleKR: '룩', rarity: 'SR', faction: '마계 학원',
+    desc: '다크 메카 소녀. 틸 컬러 트윈 번에 무거운 장갑.',
+    hair: '#26A69A', eye: '#00BCD4', skin: '#D7CCC8', body: '#004D40', accent: '#009688' },
+  bP: { name: '임프', role: 'Pawn', roleKR: '폰', rarity: 'R', faction: '마계 학원',
+    desc: '마계 연습생. 작은 뿔이 귀여운 장난꾸러기.',
+    hair: '#66BB6A', eye: '#FFA726', skin: '#D7CCC8', body: '#1B5E20', accent: '#4CAF50' },
+};
+
+/* ============================================================
+   SVG PIECE GENERATION
+============================================================ */
+function getPieceSVG(code) {
+  const c = CHARACTERS[code];
+  if (!c) return '';
+  const isWhite = code[0] === 'w';
+  const type = code[1];
+
+  // Shared face parts
+  const face = `<circle cx="50" cy="46" r="21" fill="${c.skin}"/>`;
+  const eyeL = `<ellipse cx="42" cy="45" rx="3.8" ry="5" fill="${c.eye}"/>
+    <circle cx="43.2" cy="43.5" r="1.8" fill="#fff"/>`;
+  const eyeR = `<ellipse cx="58" cy="45" rx="3.8" ry="5" fill="${c.eye}"/>
+    <circle cx="59.2" cy="43.5" r="1.8" fill="#fff"/>`;
+  const blush = `<ellipse cx="36" cy="52" rx="4" ry="2" fill="#FFAB91" opacity="0.4"/>
+    <ellipse cx="64" cy="52" rx="4" ry="2" fill="#FFAB91" opacity="0.4"/>`;
+  const mouth = `<path d="M46,54 Q50,57.5 54,54" fill="none" stroke="#E8A0A0" stroke-width="1.5" stroke-linecap="round"/>`;
+
+  let hairBack = '', hairFront = '', accessory = '', bodyEl = '';
+
+  // Background gradient circles for team
+  const bgOuter = isWhite
+    ? `<circle cx="50" cy="55" r="49" fill="#FFF8E1"/><circle cx="50" cy="55" r="49" fill="url(#wg${code})" />`
+    : `<circle cx="50" cy="55" r="49" fill="#1A0A30"/><circle cx="50" cy="55" r="49" fill="url(#bg${code})" />`;
+
+  // Defs for gradient (unique per piece type to avoid conflicts)
+  const gradId = `g_${code}`;
+  const bgGrad = isWhite
+    ? `<defs><radialGradient id="wg${code}"><stop offset="0%" stop-color="#FFFDE7" stop-opacity="0.6"/><stop offset="100%" stop-color="#FFE082" stop-opacity="0.3"/></radialGradient></defs>`
+    : `<defs><radialGradient id="bg${code}"><stop offset="0%" stop-color="#4A148C" stop-opacity="0.4"/><stop offset="100%" stop-color="#1A0A30" stop-opacity="0.6"/></radialGradient></defs>`;
+
+  // Body base
+  bodyEl = `<path d="M24,80 Q50,68 76,80 L80,110 L20,110 Z" fill="${c.body}" opacity="0.85"/>`;
+
+  switch (type) {
+    case 'K': // King - long flowing hair
+      hairBack = `
+        <ellipse cx="50" cy="62" rx="30" ry="38" fill="${c.hair}" opacity="0.85"/>
+        <rect x="22" y="55" width="9" height="32" rx="4.5" fill="${c.hair}" opacity="0.6"/>
+        <rect x="69" y="55" width="9" height="32" rx="4.5" fill="${c.hair}" opacity="0.6"/>`;
+      hairFront = `
+        <path d="M26,42 Q33,18 50,14 Q67,18 74,42 Q66,30 50,27 Q34,30 26,42 Z" fill="${c.hair}"/>
+        <path d="M32,42 Q38,32 50,30 Q62,32 68,42 Q60,36 50,35 Q40,36 32,42 Z" fill="${c.hair}" opacity="0.7"/>`;
+      if (isWhite) {
+        accessory = `<ellipse cx="50" cy="10" rx="16" ry="5.5" fill="none" stroke="#FFD54F" stroke-width="2.8" opacity="0.9"/>
+          <ellipse cx="50" cy="10" rx="16" ry="5.5" fill="#FFF9C4" opacity="0.2"/>`;
+      } else {
+        accessory = `<path d="M34,20 L28,2 L38,16 Z" fill="${c.accent}"/>
+          <path d="M66,20 L72,2 L62,16 Z" fill="${c.accent}"/>`;
+      }
+      break;
+
+    case 'Q': // Queen - twin tails
+      hairBack = `
+        <ellipse cx="25" cy="65" rx="12" ry="22" fill="${c.hair}" opacity="0.75" transform="rotate(-10 25 65)"/>
+        <ellipse cx="75" cy="65" rx="12" ry="22" fill="${c.hair}" opacity="0.75" transform="rotate(10 75 65)"/>`;
+      hairFront = `
+        <path d="M26,42 Q34,17 50,14 Q66,17 74,42 Q66,30 50,27 Q34,30 26,42 Z" fill="${c.hair}"/>
+        <path d="M30,42 Q36,34 42,40" fill="none" stroke="${c.hair}" stroke-width="5"/>
+        <path d="M70,42 Q64,34 58,40" fill="none" stroke="${c.hair}" stroke-width="5"/>`;
+      if (isWhite) {
+        accessory = `<polygon points="50,6 53,14 60,14 55,19 57,26 50,22 43,26 45,19 40,14 47,14" fill="#FF69B4" opacity="0.85"/>`;
+      } else {
+        accessory = `<path d="M42,10 Q45,2 50,6 Q55,2 58,10" fill="#FF5722" opacity="0.8"/>
+          <path d="M38,14 Q42,4 46,10" fill="#FF8A65" opacity="0.6"/>
+          <path d="M62,14 Q58,4 54,10" fill="#FF8A65" opacity="0.6"/>`;
+      }
+      break;
+
+    case 'B': // Bishop - hood/veil
+      hairBack = `<path d="M18,48 Q22,8 50,4 Q78,8 82,48 L80,70 Q70,55 50,52 Q30,55 20,70 Z" fill="${c.hair}" opacity="0.85"/>`;
+      hairFront = `
+        <path d="M22,45 Q28,12 50,8 Q72,12 78,45 Q68,30 50,27 Q32,30 22,45 Z" fill="${c.hair}"/>`;
+      if (isWhite) {
+        accessory = `<rect x="47" y="3" width="6" height="14" rx="1.5" fill="#64B5F6"/>
+          <rect x="43" y="8" width="14" height="5" rx="1.5" fill="#64B5F6"/>`;
+      } else {
+        accessory = `<circle cx="50" cy="8" r="4" fill="${c.accent}" opacity="0.7"/>
+          <path d="M46,8 L50,2 L54,8" fill="${c.accent}" opacity="0.5"/>`;
+      }
+      break;
+
+    case 'N': // Knight - ponytail
+      hairBack = `
+        <path d="M62,30 Q72,25 78,38 Q82,55 76,72 Q74,76 70,70 Q75,52 72,38 Q68,30 62,30 Z" fill="${c.hair}" opacity="0.8"/>`;
+      hairFront = `
+        <path d="M28,42 Q34,18 50,14 Q66,18 72,38 Q66,28 50,26 Q36,28 28,42 Z" fill="${c.hair}"/>
+        <path d="M34,42 Q40,35 50,33 Q58,35 62,38" fill="none" stroke="${c.hair}" stroke-width="4"/>`;
+      if (isWhite) {
+        accessory = `<path d="M70,26 Q78,18 82,24 Q80,30 74,30 Z" fill="#E0E0E0" opacity="0.6"/>
+          <path d="M72,22 Q76,14 80,20 Q78,26 74,24 Z" fill="#BDBDBD" opacity="0.5"/>`;
+      } else {
+        accessory = `<path d="M74,28 Q82,20 84,28 Q82,36 76,32 Z" fill="${c.accent}" opacity="0.6"/>`;
+      }
+      break;
+
+    case 'R': // Rook - short bob
+      hairBack = `<ellipse cx="50" cy="48" rx="28" ry="26" fill="${c.hair}" opacity="0.7"/>`;
+      hairFront = `
+        <path d="M24,48 Q28,16 50,12 Q72,16 76,48 Q72,42 66,40 L64,50 Q58,38 50,36 Q42,38 36,50 L34,40 Q28,42 24,48 Z" fill="${c.hair}"/>`;
+      if (isWhite) {
+        accessory = `<circle cx="50" cy="10" r="5" fill="${c.accent}" opacity="0.5"/>
+          <circle cx="50" cy="10" r="3" fill="#CE93D8" opacity="0.7"/>`;
+      } else {
+        accessory = `<rect x="47" y="7" width="6" height="6" fill="${c.accent}" opacity="0.6" transform="rotate(45 50 10)"/>`;
+      }
+      break;
+
+    case 'P': // Pawn - simple short hair
+      hairBack = '';
+      hairFront = `
+        <path d="M30,44 Q36,20 50,16 Q64,20 70,44 Q64,36 50,33 Q36,36 30,44 Z" fill="${c.hair}"/>
+        <path d="M36,42 Q42,35 50,34 Q58,35 64,42" fill="none" stroke="${c.hair}" stroke-width="3"/>`;
+      if (isWhite) {
+        accessory = `<path d="M44,16 L50,10 L56,16" fill="${c.accent}" opacity="0.6"/>
+          <circle cx="50" cy="14" r="2" fill="${c.accent}" opacity="0.8"/>`;
+      } else {
+        accessory = `<path d="M42,22 L40,14 L45,20 Z" fill="${c.accent}" opacity="0.7"/>
+          <path d="M58,22 L60,14 L55,20 Z" fill="${c.accent}" opacity="0.7"/>`;
+      }
+      break;
+  }
+
+  // Border ring
+  const borderColor = isWhite ? '#D4A017' : '#7E57C2';
+  const borderRing = `<circle cx="50" cy="55" r="48" fill="none" stroke="${borderColor}" stroke-width="2.5" opacity="0.5"/>`;
+
+  return `<svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+    ${bgGrad}
+    ${bgOuter}
+    ${hairBack}
+    ${bodyEl}
+    ${face}
+    ${eyeL}
+    ${eyeR}
+    ${blush}
+    ${mouth}
+    ${hairFront}
+    ${accessory}
+    ${borderRing}
+  </svg>`;
+}
+
+// Pre-render all piece SVGs
+const PIECE_SVGS = {};
+Object.keys(CHARACTERS).forEach(code => { PIECE_SVGS[code] = getPieceSVG(code); });
+
+/* ============================================================
+   SOUND EFFECTS (Web Audio API)
+============================================================ */
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { /* Audio not supported */ }
+  }
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+
+    switch (type) {
+      case 'move':
+        o.type = 'sine'; o.frequency.value = 520;
+        g.gain.setValueAtTime(0.07, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        o.start(now); o.stop(now + 0.08);
+        break;
+      case 'capture': {
+        o.type = 'triangle'; o.frequency.value = 280;
+        g.gain.setValueAtTime(0.1, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        o.start(now); o.stop(now + 0.18);
+        const o2 = audioCtx.createOscillator();
+        const g2 = audioCtx.createGain();
+        o2.connect(g2); g2.connect(audioCtx.destination);
+        o2.type = 'sine'; o2.frequency.value = 700;
+        g2.gain.setValueAtTime(0.05, now);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        o2.start(now + 0.02); o2.stop(now + 0.17);
+        break;
+      }
+      case 'check':
+        o.type = 'square';
+        o.frequency.setValueAtTime(880, now);
+        o.frequency.setValueAtTime(660, now + 0.1);
+        o.frequency.setValueAtTime(880, now + 0.2);
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        o.start(now); o.stop(now + 0.3);
+        break;
+      case 'gameover': {
+        [440, 554, 659, 880].forEach((freq, i) => {
+          const oo = audioCtx.createOscillator();
+          const gg = audioCtx.createGain();
+          oo.connect(gg); gg.connect(audioCtx.destination);
+          oo.type = 'sine'; oo.frequency.value = freq;
+          gg.gain.setValueAtTime(0.06, now + i * 0.12);
+          gg.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.3);
+          oo.start(now + i * 0.12); oo.stop(now + i * 0.12 + 0.3);
+        });
+        break;
+      }
+      default:
+        o.stop();
+    }
+  } catch (e) { /* Ignore audio errors */ }
+}
+
+/* ============================================================
+   GAME STATE
+============================================================ */
+let game = null;
+let gameMode = 'ai';
+let selectedSquare = null;
+let legalMovesForSelected = [];
+let lastMove = null;
+let isAIThinking = false;
+let capturedByWhite = []; // black pieces captured by white
+let capturedByBlack = []; // white pieces captured by black
+let moveList = [];
+let promotionPending = null;
+
+/* ============================================================
+   COORDINATE HELPERS
+============================================================ */
+function squareFromRC(row, col) {
+  return String.fromCharCode(97 + col) + (8 - row);
+}
+
+function getPieceCode(piece) {
+  if (!piece) return null;
+  return (piece.color === 'w' ? 'w' : 'b') + piece.type.toUpperCase();
+}
+
+/* ============================================================
+   BOARD RENDERING
+============================================================ */
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  const boardData = game.board();
+  const inCheck = game.in_check();
+  const turn = game.turn();
+
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const sq = squareFromRC(row, col);
+      const isLight = (row + col) % 2 === 0;
+      const piece = boardData[row][col];
+      const pieceCode = getPieceCode(piece);
+
+      const div = document.createElement('div');
+      div.className = `square ${isLight ? 'light' : 'dark-sq'}`;
+      div.dataset.square = sq;
+
+      // Last move highlight
+      if (lastMove && (sq === lastMove.from || sq === lastMove.to)) {
+        div.classList.add('last-move');
+      }
+
+      // Selected highlight
+      if (sq === selectedSquare) {
+        div.classList.add('selected');
+      }
+
+      // Legal move indicators
+      if (legalMovesForSelected.some(m => m.to === sq)) {
+        div.classList.add(piece ? 'legal-capture' : 'legal-move');
+      }
+
+      // Check highlight
+      if (inCheck && piece && piece.type === 'k' && piece.color === turn) {
+        div.classList.add('check-sq');
+      }
+
+      // Piece
+      if (pieceCode && PIECE_SVGS[pieceCode]) {
+        const pw = document.createElement('div');
+        pw.className = 'piece-wrap';
+        pw.innerHTML = PIECE_SVGS[pieceCode];
+        div.appendChild(pw);
+      }
+
+      // Coordinate labels
+      if (row === 7) {
+        const fileLabel = document.createElement('span');
+        fileLabel.className = 'coord-label coord-file';
+        fileLabel.textContent = String.fromCharCode(97 + col);
+        div.appendChild(fileLabel);
+      }
+      if (col === 0) {
+        const rankLabel = document.createElement('span');
+        rankLabel.className = 'coord-label coord-rank';
+        rankLabel.textContent = 8 - row;
+        div.appendChild(rankLabel);
+      }
+
+      // Click handler
+      div.addEventListener('click', () => handleSquareClick(sq));
+
+      // Tooltip on long press / hover
+      div.addEventListener('mouseenter', (e) => {
+        if (pieceCode) showTooltip(pieceCode, e.clientX, e.clientY);
+      });
+      div.addEventListener('mouseleave', hideTooltip);
+      let longPressTimer = null;
+      div.addEventListener('touchstart', (e) => {
+        if (pieceCode) {
+          longPressTimer = setTimeout(() => {
+            const touch = e.touches[0];
+            showTooltip(pieceCode, touch.clientX, touch.clientY);
+          }, 400);
+        }
+      }, { passive: true });
+      div.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        hideTooltip();
+      });
+
+      boardEl.appendChild(div);
+    }
+  }
+}
+
+/* ============================================================
+   CLICK HANDLING
+============================================================ */
+function handleSquareClick(sq) {
+  if (isAIThinking) return;
+  if (promotionPending) return;
+  if (game.game_over()) return;
+
+  initAudio();
+
+  const piece = game.get(sq);
+  const turn = game.turn();
+
+  // If in AI mode and it's AI's turn, ignore clicks
+  if (gameMode === 'ai' && turn === 'b') return;
+
+  // If a square is already selected
+  if (selectedSquare) {
+    // Check if clicking a legal move target
+    const targetMove = legalMovesForSelected.find(m => m.to === sq);
+    if (targetMove) {
+      // Check if promotion is needed
+      if (targetMove.flags.includes('p') || (targetMove.piece === 'p' &&
+          ((turn === 'w' && sq[1] === '8') || (turn === 'b' && sq[1] === '1')))) {
+        // Check if any of the legal moves for this destination include promotion
+        const promoMoves = legalMovesForSelected.filter(m => m.to === sq && m.promotion);
+        if (promoMoves.length > 0) {
+          showPromotionModal(selectedSquare, sq, turn);
+          return;
+        }
+      }
+      makeMove(selectedSquare, sq);
+      return;
+    }
+
+    // If clicking own piece, reselect
+    if (piece && piece.color === turn) {
+      selectSquare(sq);
+      return;
+    }
+
+    // Otherwise deselect
+    deselectSquare();
+    return;
+  }
+
+  // No square selected - select own piece
+  if (piece && piece.color === turn) {
+    selectSquare(sq);
+  }
+}
+
+function selectSquare(sq) {
+  selectedSquare = sq;
+  legalMovesForSelected = game.moves({ square: sq, verbose: true });
+  renderBoard();
+}
+
+function deselectSquare() {
+  selectedSquare = null;
+  legalMovesForSelected = [];
+  renderBoard();
+}
+
+/* ============================================================
+   MOVE EXECUTION
+============================================================ */
+function makeMove(from, to, promotion) {
+  const moveObj = { from, to };
+  if (promotion) moveObj.promotion = promotion;
+
+  const result = game.move(moveObj);
+  if (!result) return false;
+
+  // Track captures
+  if (result.captured) {
+    const capturedCode = (result.color === 'w' ? 'b' : 'w') + result.captured.toUpperCase();
+    if (result.color === 'w') {
+      capturedByWhite.push(capturedCode);
+    } else {
+      capturedByBlack.push(capturedCode);
+    }
+    playSound('capture');
+  } else {
+    playSound('move');
+  }
+
+  if (game.in_check()) {
+    playSound('check');
+  }
+
+  lastMove = { from: result.from, to: result.to };
+  moveList.push(result.san);
+  selectedSquare = null;
+  legalMovesForSelected = [];
+
+  renderBoard();
+  updateUI();
+  updateMoveLog();
+
+  // Check game over
+  if (game.game_over()) {
+    setTimeout(() => showGameOver(), 500);
+    return true;
+  }
+
+  // AI's turn
+  if (gameMode === 'ai' && game.turn() === 'b') {
+    isAIThinking = true;
+    updateStatus();
+    setTimeout(() => {
+      makeAIMove();
+    }, 600 + Math.random() * 500);
+  }
+
+  return true;
+}
+
+/* ============================================================
+   AI
+============================================================ */
+const PIECE_VALUES = { p: 10, n: 30, b: 32, r: 50, q: 90, k: 900 };
+
+// Position bonus tables (simplified)
+const CENTER_BONUS = {};
+['d4','d5','e4','e5'].forEach(s => CENTER_BONUS[s] = 8);
+['c3','c4','c5','c6','d3','d6','e3','e6','f3','f4','f5','f6'].forEach(s => CENTER_BONUS[s] = 4);
+['b2','b3','b4','b5','b6','b7','c2','c7','d2','d7','e2','e7','f2','f7','g2','g3','g4','g5','g6','g7'].forEach(s => CENTER_BONUS[s] = 2);
+
+function evaluateBoard() {
+  let score = 0;
+  const board = game.board();
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (p) {
+        const sq = squareFromRC(r, c);
+        let val = PIECE_VALUES[p.type] || 0;
+        val += (CENTER_BONUS[sq] || 0) * 0.3;
+        score += p.color === 'w' ? val : -val;
+      }
+    }
+  }
+  return score;
+}
+
+function makeAIMove() {
+  const moves = game.moves({ verbose: true });
+  if (moves.length === 0) { isAIThinking = false; return; }
+
+  let bestScore = Infinity;
+  let bestMoves = [];
+
+  for (const move of moves) {
+    game.move(move);
+
+    let score = evaluateBoard();
+
+    // Bonus for checkmate
+    if (game.in_checkmate()) score = -10000;
+    else if (game.in_check()) score -= 15;
+    // Penalty for stalemate
+    if (game.in_stalemate()) score = 0;
+
+    game.undo();
+
+    // Random jitter
+    score += (Math.random() - 0.5) * 6;
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (Math.abs(score - bestScore) < 1) {
+      bestMoves.push(move);
+    }
+  }
+
+  const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+  // Track captures
+  if (chosen.captured) {
+    const capturedCode = 'w' + chosen.captured.toUpperCase();
+    capturedByBlack.push(capturedCode);
+  }
+
+  const result = game.move(chosen);
+  if (!result) { isAIThinking = false; return; }
+
+  if (result.captured) {
+    playSound('capture');
+  } else {
+    playSound('move');
+  }
+  if (game.in_check()) playSound('check');
+
+  lastMove = { from: result.from, to: result.to };
+  moveList.push(result.san);
+  isAIThinking = false;
+
+  renderBoard();
+  updateUI();
+  updateMoveLog();
+
+  if (game.game_over()) {
+    setTimeout(() => showGameOver(), 500);
+  }
+}
+
+/* ============================================================
+   PROMOTION
+============================================================ */
+function showPromotionModal(from, to, color) {
+  promotionPending = { from, to, color };
+  const grid = document.getElementById('promotion-grid');
+  grid.innerHTML = '';
+  const promoTypes = [
+    { piece: 'q', label: '여왕' },
+    { piece: 'r', label: '룩' },
+    { piece: 'b', label: '비숍' },
+    { piece: 'n', label: '나이트' }
+  ];
+
+  promoTypes.forEach(pt => {
+    const code = color + pt.piece.toUpperCase();
+    const opt = document.createElement('div');
+    opt.className = 'promo-option';
+    opt.innerHTML = `
+      <div class="promo-avatar">${PIECE_SVGS[code] || ''}</div>
+      <div class="promo-label">${CHARACTERS[code] ? CHARACTERS[code].name : pt.label}</div>
+    `;
+    opt.addEventListener('click', () => {
+      document.getElementById('promotion-modal').classList.remove('active');
+      makeMove(from, to, pt.piece);
+      promotionPending = null;
+    });
+    grid.appendChild(opt);
+  });
+
+  document.getElementById('promotion-modal').classList.add('active');
+}
+
+/* ============================================================
+   GAME OVER
+============================================================ */
+function showGameOver() {
+  playSound('gameover');
+  const modal = document.getElementById('gameover-modal');
+  const title = document.getElementById('gameover-title');
+  const msg = document.getElementById('gameover-msg');
+
+  if (game.in_checkmate()) {
+    const winner = game.turn() === 'w' ? '마계 학원' : '천사 학원';
+    const loser = game.turn() === 'w' ? '천사 학원' : '마계 학원';
+    title.textContent = '체크메이트!';
+    msg.textContent = `${winner} 승리! ${loser}의 왕이 쓰러졌습니다.`;
+  } else if (game.in_stalemate()) {
+    title.textContent = '스테일메이트';
+    msg.textContent = '무승부! 움직일 수 있는 기물이 없습니다.';
+  } else if (game.in_draw()) {
+    title.textContent = '무승부';
+    msg.textContent = '게임이 무승부로 종료되었습니다.';
+  } else if (game.in_threefold_repetition()) {
+    title.textContent = '무승부';
+    msg.textContent = '같은 국면이 3번 반복되어 무승부입니다.';
+  } else {
+    title.textContent = '게임 종료';
+    msg.textContent = '게임이 종료되었습니다.';
+  }
+
+  modal.classList.add('active');
+}
+
+/* ============================================================
+   UI UPDATES
+============================================================ */
+function updateUI() {
+  const turn = game.turn();
+
+  // Player bars
+  const barW = document.getElementById('bar-white');
+  const barB = document.getElementById('bar-black');
+  const badgeW = document.getElementById('badge-white');
+  const badgeB = document.getElementById('badge-black');
+
+  barW.classList.toggle('active', turn === 'w');
+  barB.classList.toggle('active', turn === 'b');
+  badgeW.classList.toggle('hidden', turn !== 'w');
+  badgeB.classList.toggle('hidden', turn !== 'b');
+
+  // Captured pieces
+  renderCaptured('captured-white', capturedByWhite);
+  renderCaptured('captured-black', capturedByBlack);
+
+  updateStatus();
+}
+
+function renderCaptured(elId, pieces) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  // Sort by value
+  const order = { P: 0, N: 1, B: 2, R: 3, Q: 4 };
+  const sorted = [...pieces].sort((a, b) => (order[a[1]] || 0) - (order[b[1]] || 0));
+  sorted.forEach(code => {
+    const div = document.createElement('div');
+    div.className = 'captured-piece';
+    div.innerHTML = PIECE_SVGS[code] || '';
+    el.appendChild(div);
+  });
+}
+
+function updateStatus() {
+  const bar = document.getElementById('status-bar');
+  if (game.game_over()) {
+    bar.textContent = '게임 종료';
+    return;
+  }
+  if (isAIThinking) {
+    bar.innerHTML = '<span class="thinking">마계 학원 생각 중 <span class="thinking-dots"><span></span><span></span><span></span></span></span>';
+    return;
+  }
+  if (game.in_check()) {
+    bar.textContent = '⚠️ 체크!';
+    return;
+  }
+  const turnText = game.turn() === 'w' ? '천사 학원' : '마계 학원';
+  bar.textContent = `${turnText}의 차례`;
+}
+
+function updateMoveLog() {
+  const log = document.getElementById('move-log');
+  log.innerHTML = '';
+  for (let i = 0; i < moveList.length; i += 2) {
+    const num = Math.floor(i / 2) + 1;
+    const w = moveList[i];
+    const b = moveList[i + 1] || '';
+
+    const entry = document.createElement('span');
+    entry.className = 'move-entry';
+
+    const isWCapture = w.includes('x');
+    const isBCapture = b.includes('x');
+    const isWCheck = w.includes('+') || w.includes('#');
+    const isBCheck = b.includes('+') || b.includes('#');
+
+    let html = `<span class="move-num">${num}.</span>`;
+    html += `<span class="move-san${isWCapture ? ' capture' : ''}${isWCheck ? ' check' : ''}">${w}</span>`;
+    if (b) {
+      html += ` <span class="move-san${isBCapture ? ' capture' : ''}${isBCheck ? ' check' : ''}">${b}</span>`;
+    }
+    entry.innerHTML = html;
+    log.appendChild(entry);
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+/* ============================================================
+   TOOLTIP
+============================================================ */
+function showTooltip(code, x, y) {
+  const c = CHARACTERS[code];
+  if (!c) return;
+  const tip = document.getElementById('char-tooltip');
+  document.getElementById('tip-avatar').innerHTML = PIECE_SVGS[code] || '';
+  document.getElementById('tip-name').textContent = c.name;
+  const rarity = document.getElementById('tip-rarity');
+  rarity.textContent = c.rarity;
+  rarity.className = `tooltip-rarity ${c.rarity}`;
+  document.getElementById('tip-desc').textContent = `[${c.roleKR}] ${c.desc}`;
+  tip.classList.add('visible');
+
+  // Position
+  const pad = 12;
+  let left = x + pad;
+  let top = y + pad;
+  if (left + 210 > window.innerWidth) left = x - 210;
+  if (top + 120 > window.innerHeight) top = y - 120;
+  tip.style.left = Math.max(4, left) + 'px';
+  tip.style.top = Math.max(4, top) + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('char-tooltip').classList.remove('visible');
+}
+
+/* ============================================================
+   GAME FLOW
+============================================================ */
+function startGame(mode) {
+  gameMode = mode;
+  game = new Chess();
+  selectedSquare = null;
+  legalMovesForSelected = [];
+  lastMove = null;
+  isAIThinking = false;
+  capturedByWhite = [];
+  capturedByBlack = [];
+  moveList = [];
+  promotionPending = null;
+
+  // Set player avatars
+  document.getElementById('avatar-white').innerHTML = PIECE_SVGS['wK'];
+  document.getElementById('avatar-black').innerHTML = PIECE_SVGS['bK'];
+
+  if (mode === 'ai') {
+    document.getElementById('name-black').textContent = '마계 학원 (AI)';
+  } else {
+    document.getElementById('name-black').textContent = '마계 학원';
+  }
+
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+
+  renderBoard();
+  updateUI();
+  updateMoveLog();
+}
+
+function resetGame() {
+  document.getElementById('gameover-modal').classList.remove('active');
+  document.getElementById('promotion-modal').classList.remove('active');
+  startGame(gameMode);
+}
+
+function undoMove() {
+  if (isAIThinking) return;
+  if (moveList.length === 0) return;
+
+  // In AI mode, undo two moves (player + AI)
+  if (gameMode === 'ai' && game.turn() === 'w' && moveList.length >= 2) {
+    // Undo AI move
+    const aiResult = game.undo();
+    if (aiResult && aiResult.captured) {
+      capturedByBlack.pop();
+    }
+    moveList.pop();
+
+    // Undo player move
+    const playerResult = game.undo();
+    if (playerResult && playerResult.captured) {
+      capturedByWhite.pop();
+    }
+    moveList.pop();
+  } else {
+    const result = game.undo();
+    if (result && result.captured) {
+      if (result.color === 'w') capturedByWhite.pop();
+      else capturedByBlack.pop();
+    }
+    moveList.pop();
+  }
+
+  selectedSquare = null;
+  legalMovesForSelected = [];
+  lastMove = moveList.length > 0 ? null : null; // Simplified - lose last move highlight on undo
+  renderBoard();
+  updateUI();
+  updateMoveLog();
+}
+
+function goToTitle() {
+  document.getElementById('gameover-modal').classList.remove('active');
+  document.getElementById('promotion-modal').classList.remove('active');
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('title-screen').style.display = 'flex';
+  isAIThinking = false;
+}
+
+/* ============================================================
+   STARS ANIMATION
+============================================================ */
+function createStars() {
+  const container = document.getElementById('stars-container');
+  container.innerHTML = '';
+  const count = 40;
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = (Math.random() * 3) + 's';
+    star.style.animationDuration = (2 + Math.random() * 3) + 's';
+    const size = 1.5 + Math.random() * 2.5;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    container.appendChild(star);
+  }
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+function init() {
+  createStars();
+
+  // Verify chess.js loaded
+  if (typeof Chess === 'undefined') {
+    document.getElementById('title-screen').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--text-secondary)">' +
+      '<p style="font-size:1.2rem;margin-bottom:12px">⚠️ 체스 엔진 로드 실패</p>' +
+      '<p>새로고침 해주세요.</p></div>';
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
